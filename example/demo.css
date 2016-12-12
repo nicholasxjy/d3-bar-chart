@@ -58,7 +58,6 @@ p {
   stroke-width: 1px;
   stroke: #d8d8d8;
 }
-
 .chart .move-line.y {
   stroke: #333;
   stroke-width: 1px;
@@ -76,4 +75,10 @@ p {
 .chart .x-tip-text {
   font-size: 12px;
   fill: #fff;
+}
+.chart .bar-actual {
+  fill: #1478F0;
+}
+.chart .bar-forecast {
+  fill: #999;
 }

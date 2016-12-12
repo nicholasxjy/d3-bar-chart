@@ -10,21 +10,6 @@ var data = [{
   human_date: "2016-04-01 22:00:00"
 }, {
   forecast: "",
-  actual: "55.8",
-  timestamp: 1462226400,
-  human_date: "2016-05-02 22:00:00"
-}, {
-  forecast: "52.4",
-  actual: "55.7",
-  timestamp: 1464818400,
-  human_date: "2016-06-01 22:00:00"
-}, {
-  forecast: "55.9",
-  actual: "57",
-  timestamp: 1467410400,
-  human_date: "2016-07-01 22:00:00"
-}, {
-  forecast: "",
   actual: "56.9",
   timestamp: 1470088800,
   human_date: "2016-08-01 22:00:00"
@@ -100,7 +85,7 @@ data.forEach(d => {
 
 
 
-var chart = new LineChart({
+var chart = new BarChart({
   xTicks: 6,
   yTicks: 6,
   margin: {
@@ -110,4 +95,4 @@ var chart = new LineChart({
     right: 40
   }
 })
-chart.renderMultiLines(list)
+chart.renderMultiBars(list)

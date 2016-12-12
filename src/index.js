@@ -20,10 +20,10 @@ const defaults = {
 }
 
 /**
- * LineChart.
+ * BarChart.
  */
 
-class LineChart {
+class BarChart {
 
   /**
    * Construct with the given `config`.
@@ -101,7 +101,10 @@ class LineChart {
       .attr('transform', `translate(${w}, 0)`)
       .call(this.yAxis)
   }
-
+  addMonth(date, n) {
+    date = new Date(date)
+    return date.setMonth(date.getMonth() + n)
+  }
   /**
    * Render axis.
    */
@@ -109,10 +112,9 @@ class LineChart {
   renderAxis(data, options) {
     const { chart, xScale, yScale, xAxis, yAxis, nice } = this
     const [min, max] = d3.extent(data, d => d.value)
-    console.log(min)
-    console.log(max)
-    const xd = xScale.domain(d3.extent(data, d => d.date))
-    const yd = yScale.domain([min-10, max+10])
+    const [xmin, xmax] = d3.extent(data, d => d.date)
+    const xd = xScale.domain([this.addMonth(xmin, -1), this.addMonth(xmax, 2)])
+    const yd = yScale.domain([0, max+10])
 
     if (nice) {
       xd.nice()
@@ -131,21 +133,21 @@ class LineChart {
    * Render line.
    */
 
-   renderLine(data, options) {
-     const { interpolate, chart } = this
+   renderBars(data, options) {
+     const { chart, xScale, yScale } = this
+     const [w, h] = this.conf.dimensions
      const tchart = chart.transition()
      const prefix = options.prefix || 'chart'
-     const line = d3.line()
-       .x(d => this.xScale(d.date))
-       .y(d => this.yScale(d.value))
-
-     chart.append('path')
-       .attr('class', `line line-${prefix}`)
-
-     tchart.select(`.line-${prefix}`)
-       .attr('d', line(data))
+     chart.selectAll('bar')
+      .data(data)
+      .enter().append("rect")
+      .attr("class", `bar bar-${prefix}`)
+      .attr("x", d => xScale(d.date))
+      .attr("y", d => yScale(d.value))
+      .attr("width", 30)
+      .attr("height", d => h - yScale(d.value));
    }
-   
+
   /**
    * Render the chart against the given `data`.
    */
@@ -162,52 +164,31 @@ class LineChart {
        return item
      })
      this.renderAxis(data, options)
-     this.renderLine(data, options)
-     this.renderDots(data, options)
+     this.renderBars(data, options)
      this.renderMoveLine(data, options)
    }
    /**
-    * Render dots
+    * Rende multibar
     */
-    renderDots(data, options) {
-      const { xScale, yScale } = this
-      const prefix = options.prefix || 'line-dot'
-      this.chart.selectAll('dot')
-        .data(data)
-        .enter()
-        .append('circle')
-        .attr('class', `dot ${prefix}`)
-        .attr('r', 2)
-        .attr('cx', d => xScale(d.date))
-        .attr('cy', d => yScale(d.value))
-        .attr('fill', d => d.color)
-        .exit()
-        .remove()
+  renderMultiBars(data, options={}) {
+    const parseValue = d3.format(".1f")
+    data = data.map(d => {
+      return {
+        date: new Date(d.timestamp*1000),
+        value: +parseValue(d.value || 0),
+        symbol: d.symbol
+      }
+    })
+    this.renderAxis(data, options)
+    const nestData = d3.nest()
+      .key(d => d.symbol)
+      .entries(data)
 
-    }
-   /**
-    * Render mutiple lines
-    */
-    renderMultiLines(data, options={}) {
-      const parseValue = d3.format(".1f")
-      data = data.map(d => {
-        return {
-          date: new Date(d.timestamp*1000),
-          value: +parseValue(d.value || 0),
-          symbol: d.symbol
-        }
-      })
-      this.renderAxis(data, options)
-      const nestData = d3.nest()
-        .key(d => d.symbol)
-        .entries(data)
-
-      nestData.forEach(d => {
-        this.renderLine(d.values, {prefix: d.key})
-        this.renderDots(d.values, {prefix: d.key})
-      })
-      this.renderMoveLine(data)
-    }
+    nestData.forEach(d => {
+      this.renderBars(d.values, {prefix: d.key})
+    })
+    this.renderMoveLine(data)
+  }
   /**
    * Render Move Line
    */
@@ -239,11 +220,7 @@ class LineChart {
       .attr('transform', `translate(${w+10}, 0)`)
 
     this.chart
-      .append('rect')
-      .attr('width', w)
-      .attr('height', h)
-      .style("fill", "none")
-      .style("pointer-events", "all")
+      .selectAll('.bar')
       .on("mouseover", () => {
         moveLine.style('display', null)
       })
@@ -252,11 +229,11 @@ class LineChart {
         self.tooltip.hide()
       })
       .on('mousemove', function() {
-        const bisect = d3.bisector(d => d.date).left;
+        const bisect = d3.bisector(d => d.date).right;
         const x0 = d3.mouse(this)[0]
         const date0 = xScale.invert(x0)
         const index = bisect(data, date0)
-        const y = data[index]
+        const y = data[index-1]
         moveLine.select('.y')
           .attr('transform', `translate(${x0}, 0)`)
         if (y) {
@@ -269,8 +246,10 @@ class LineChart {
             .attr('transform', `translate(${w+10}, ${yScale(y.value)+4})`)
             .text(`${parseFloat(y.value).toFixed(1)}`)
         }
-        const circles = self.chart.selectAll('circle').nodes();
-        self.tooltip.show(circles[index], y)
+        const bars = self.chart.selectAll('.bar').nodes();
+        if (bars && bars[index-1]) {
+          self.tooltip.show(bars[index-1], y)
+        }
       })
   }
   /**
@@ -282,12 +261,6 @@ class LineChart {
        animate: true
      })
    }
-
-   updateMulti(data) {
-     this.renderMultiLines(data, {
-       animate: true
-     })
-   }
 }
 
-module.exports = LineChart
+module.exports = BarChart

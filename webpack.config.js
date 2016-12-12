@@ -24,8 +24,8 @@ const config = {
   ],
   output: {
     path: path.join(__dirname, 'dist'),
-    filename: 'LineChart.js',
-    library: 'LineChart',
+    filename: 'BarChart.js',
+    library: 'BarChart',
     libraryTarget: 'umd'
   },
   module: {
@@ -74,7 +74,7 @@ if (isProduction) {
     }
   }
   config.entry = './src/index.js'
-  config.output.filename = 'linechart.min.js'
+  config.output.filename = 'barchart.min.js'
   config.plugins = [
     new webpack.optimize.UglifyJsPlugin({
       compress: {
